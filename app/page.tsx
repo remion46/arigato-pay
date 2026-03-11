@@ -1,21 +1,40 @@
 "use client";
-import React, { useState } from 'react';
-import { Heart, Home, MapPin, MessageCircle } from 'lucide-react';
-
-const ACTIONS = [
-  { id: 1, cat: '同棲', name: '汚れ仕事', coins: 500, emoji: '🧼' },
-  { id: 2, cat: '同棲', name: '献立・在庫', coins: 300, emoji: '🍳' },
-  { id: 3, cat: '同棲', name: 'フォロー', coins: 100, emoji: '💡' },
-  { id: 4, cat: 'デート', name: '店・ルート', coins: 400, emoji: '📍' },
-  { id: 5, cat: 'デート', name: '写真撮影', coins: 200, emoji: '📸' },
-  { id: 6, cat: 'デート', name: '決断', coins: 300, emoji: '🗺️' },
-  { id: 7, cat: 'リモート', name: '愚痴鑑賞', coins: 400, emoji: '👂' },
-  { id: 8, cat: 'リモート', name: '気遣い', coins: 100, emoji: '💌' },
-  { id: 9, cat: 'リモート', name: 'シェア', coins: 50, emoji: '💬' },
-];
+import React, { useState, useEffect } from 'react';
+import { Heart } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function ArigatoPay() {
   const [total, setTotal] = useState(0);
+  const [actions, setActions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 1. 起動時にデータベースからデータを取得
+  useEffect(() => {
+    async function fetchData() {
+      // アクション一覧を取得
+      const { data: actionData } = await supabase.from('couple_actions').select('*');
+      if (actionData) setActions(actionData);
+      
+      // 仮のユーザー（IDは後でペアリング機能時に動的にします）としてデータを取得
+      // 今回はプロトタイプとして全ログの合計を表示
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  // 2. ボタンを押した時の処理
+  const handlePay = async (actionName: string, coins: number) => {
+    // 画面上の数字を即座に更新（バイブス優先）
+    setTotal(prev => prev + coins);
+
+    // 実際の運用ではここに activity_logs への保存処理を追加します
+    console.log(`${actionName}で${coins}枚獲得！`);
+    
+    // スマホのバイブ機能を呼び出し（対応端末のみ）
+    if (navigator.vibrate) navigator.vibrate(50);
+  };
+
+  if (loading) return <div className="flex h-screen items-center justify-center font-bold text-primary">Loading arigato...</div>;
 
   return (
     <main className="max-w-md mx-auto p-6 space-y-8">
@@ -30,17 +49,17 @@ export default function ArigatoPay() {
       </header>
 
       <section className="grid grid-cols-1 gap-3">
-        {ACTIONS.map((action) => (
+        {actions.map((action) => (
           <button
             key={action.id}
-            onClick={() => setTotal(t => t + action.coins)}
-            className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform text-left"
+            onClick={() => handlePay(action.name, action.coins)}
+            className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-all hover:border-primary/30 text-left"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{action.emoji}</span>
+              <span className="text-2xl">{action.icon_emoji}</span>
               <div>
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{action.cat}</p>
-                <p className="font-bold text-gray-700">{action.name}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{action.category}</p>
+                <p className="font-bold text-gray-700 leading-tight">{action.name}</p>
               </div>
             </div>
             <span className="bg-primary/10 text-primary font-bold px-3 py-1 rounded-full text-sm">
@@ -50,8 +69,8 @@ export default function ArigatoPay() {
         ))}
       </section>
 
-      <footer className="text-center text-gray-400 text-xs pb-10">
-        ボタンを押して感謝を貯めよう
+      <footer className="text-center text-gray-300 text-[10px] pb-10 uppercase tracking-tighter">
+        Connected to Supabase Database
       </footer>
     </main>
   );
