@@ -71,14 +71,19 @@ export default function ArigatoPay() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      const { error: signUpError } = await supabase.auth.signUp({ email, password });
-      if (signUpError) alert(signUpError.message);
-      else alert("登録しました。もう一度ログインしてください。");
+  e.preventDefault();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (error) {
+    // ログイン失敗なら新規登録を試みる
+    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (signUpError) {
+      alert("エラー: " + signUpError.message); // ← ここで原因が表示されます！
+    } else {
+      alert("アカウントを作成しました！リロードしてもう一度ログインしてください。");
     }
-  };
+  }
+};
 
   if (loading) return <div className="p-10 text-center font-bold text-primary">Loading...</div>;
 
